@@ -21,3 +21,9 @@ type NewType = Omit<Course, 'rating' | 'reviewsCount' | 'studentCount'> & {
 };
 
 export interface CourseWithPath extends NewType {}
+
+export interface CourseReturn {
+  course: Maybe<CourseWithPath>;
+  prevCourse: Maybe<CourseWithPath>;
+  nextCourse: Maybe<CourseWithPath>;
+}

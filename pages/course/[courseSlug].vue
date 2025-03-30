@@ -54,7 +54,7 @@
           unelevated
           :outline="completed ? false : true"
           :icon="completed ? 'check' : undefined"
-          @click="completed = !completed"
+          @click="toggleComplete"
         />
         <q-input
           v-model="memo"
@@ -67,30 +67,30 @@
         />
       </q-form>
       <template #footer>
+        <q-btn
+          v-if="prevCourse"
+          label="이전 강의"
+          color="primary"
+          unelevated
+          @click="movePage(prevCourse.path)"
+        />
         <ClientOnly>
-          <q-btn
-            v-if="prevCourse"
-            label="이전 강의"
-            color="primary"
-            unelevated
-            @click="movePage(prevCourse.path)"
-          />
           <q-btn
             label="쿼리 추가"
             color="dark"
             unelevated
             :to="{ path: $route.path, query: { timestamp: Date.now() } }"
           />
-          {{ $route.fullPath }}
-          <q-space />
-          <q-btn
-            v-if="nextCourse"
-            label="다음 강의"
-            color="primary"
-            unelevated
-            @click="movePage(nextCourse.path)"
-          />
         </ClientOnly>
+        {{ $route.fullPath }}
+        <q-space />
+        <q-btn
+          v-if="nextCourse"
+          label="다음 강의"
+          color="primary"
+          unelevated
+          @click="movePage(nextCourse.path)"
+        />
       </template>
     </AppCard>
   </div>
@@ -99,18 +99,52 @@
 <script setup lang="ts">
 const route = useRoute();
 const courseSlug = route.params.courseSlug as string;
-const { course, prevCourse, nextCourse } = useCourse(courseSlug);
+const { course, prevCourse, nextCourse } = (await useCourse(courseSlug)) || {};
 console.log('[courseSlug].vue 컴포넌트 setup hooks', courseSlug);
 
 // const title = ref('');
+
+// if (!course) {
+//   throw createError({
+//     statusCode: 404,
+//     statusMessage: 'Course not found',
+//     // fatal: true,
+//   });
+// }
 
 definePageMeta({
   key: (route) => route.fullPath,
   title: 'My home page',
   pageType: '',
-  keepalive: true,
+  // keepalive: true,
   alias: ['/lecture/:courseSlug'],
   // title: title.value,
+  // validate: (route) => {
+  //   const curseSlug = route.params.courseSlug as string;
+  //   const { course } = useCourse(curseSlug);
+  //   if (!course) {
+  //     throw createError({
+  //       statusCode: 404,
+  //       statusMessage: 'Course not found',
+  //       // fatal: true,
+  //     });
+  //   }
+  //   return true;
+  // },
+  middleware: async (route) => {
+    const curseSlug = route.params.courseSlug as string;
+    const { course } = (await useCourse(curseSlug)) || {};
+    if (!course) {
+      // return navigateTo('/');
+      return abortNavigation(
+        createError({
+          statusCode: 404,
+          statusMessage: 'Course not found',
+          fatal: true,
+        }),
+      );
+    }
+  },
 });
 // console.log('route.meta.title: ', route.meta.title);
 
@@ -119,6 +153,14 @@ const completed = ref(false);
 
 const movePage = async (path: string) => {
   await navigateTo(path);
+};
+
+const toggleComplete = () => {
+  // await $fetch('/api/error');
+  // showError('에러가 발생했습니다.');
+  completed.value = !completed.value;
+
+  throw createError('에러가 발생했습니다.');
 };
 </script>
 
